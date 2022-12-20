@@ -9,38 +9,45 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var multiplicationTable = 2
-
-    @State private var numberOfQuestions = [5, 10, 15, 20]
-    @State private var numberOfQuestion = 0
-    
-    @State private var questionArray = []
-    @State private var answerArray = []
-    
-    @State private var userAnswer = 0
-    @State private var answer = 0
-    
-    @State private var playingGame = false
-    @State private var configuringGame = true
-    
-
-    
-    
-    struct Problem {
-        var operand_1 = 0
-        var operand_2 = 0
+    // struct to set q and a
+    struct QuestionAndAnswer {
+        var operand1: Int
+        var operand2: Int
         
         var answer: Int {
-            operand_1 * operand_2
+            operand1 * operand2
         }
         
-        var problemLabel: String {
-            "\(operand_1) * \(operand_2)"
+        var questionText: String {
+            "\(operand1) * \(operand2)"
         }
     }
     
-  
+    // variables to set questions and answer
+    @State private var multiplicationTable = 2
+    @State private var numberOfQuestions = [5, 10, 15, 20]
+    @State private var numberOfQuestion = 0
+    @State private var questionArray = [String]()
+    @State private var answerArray = [Int]()
+    @State private var userAnswer: Int = 0
+    @State private var answer = 0
+    @State private var currentQuestion = 0
+    @State private var displayQuestion = " "
     
+    
+    //score related variables
+    @State private var score = 0
+    
+    //game configuration variables
+    @State private var playingGame = false
+    @State private var configuringGame = true
+    
+    
+    //alert configuration variables
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    @State private var gameOver = false
+  
     var body: some View {
         NavigationStack {
             Form {
@@ -71,36 +78,95 @@ struct ContentView: View {
                 
                 if playingGame {
                     Section {
-                       
+                        Text(displayQuestion)
+                        Section{
+                            TextField("User answer", value: $userAnswer, format: .number)
+                            Button("Check Answer") {
+                                checkAnswer()
+                            }
+                        }
+                        Section {
+                            Text("Here is the score \(score)")
+                        }
                     }
-                    
+                    .onAppear(perform: setQuestion)
+                    .alert(alertMessage, isPresented: $showAlert) {
+                        Button("Ok") {
+                            if gameOver {
+                                startNewGames()
+                            } else {
+                                
+                            }
+                        }
+                    }
                 }
-                
             }
             .navigationTitle("CanUMultiply")
         }
     }
-    
+    //function to save user configuration settings and to set up Q and A arrays
     func configureGame() {
+        
         playingGame = true
         configuringGame = false
+        gameOver = false
         
         var count = 0
-        
         while count < numberOfQuestion {
             let randomNum = Int.random(in: 0...12)
-            let problem = Problem(operand_1: multiplicationTable, operand_2: randomNum)
+            let problem = QuestionAndAnswer(operand1: multiplicationTable, operand2: randomNum)
             
-            let questionLabel = problem.problemLabel
+            let questionTexts = problem.questionText
             let questionAnswer = problem.answer
             
-            questionArray.append(questionLabel)
+            questionArray.append(questionTexts)
             answerArray.append(questionAnswer)
             
             count += 1
         }
         print(questionArray)
         print(answerArray)
+    }
+    
+    
+    //set up questions and also check if user's number of questions has met the limit if so end the game
+    func setQuestion() {
+        if currentQuestion != numberOfQuestion {
+            let displaysQuestion = questionArray[currentQuestion]
+            displayQuestion = displaysQuestion
+            
+            let setAnswer = answerArray[currentQuestion]
+            answer = setAnswer
+            
+            userAnswer = 0
+        } else {
+            showAlert = true
+            alertMessage = "Game Over! Start New Game? "
+            gameOver = true
+        }
+    }
+    
+    // check if the answer is correct dispaly the correct answer if the user is wrong
+    func checkAnswer() {
+            if answer == userAnswer {
+                score += 1
+                alertMessage = "Correct!"
+            } else {
+                score -= 1
+                alertMessage = "Sorry the answer is \(answer)"
+            }
+            currentQuestion += 1
+            showAlert = true
+            setQuestion()
+        }
+    
+    //set game configuration settings and send user back to configuration page to start a new game.
+    func startNewGames() {
+        currentQuestion = 0
+        numberOfQuestion = 0
+        score = 0
+        playingGame = false
+        configuringGame = true
     }
 }
 
